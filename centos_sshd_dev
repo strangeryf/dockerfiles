@@ -1,0 +1,31 @@
+FROM centos
+MAINTAINER strangeryf <jerry_cq_cn@yahoo.com>
+
+#enable systemd
+ENV container docker
+RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
+systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+rm -f /lib/systemd/system/multi-user.target.wants/*;\
+rm -f /etc/systemd/system/*.wants/*;\
+rm -f /lib/systemd/system/local-fs.target.wants/*; \
+rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+rm -f /lib/systemd/system/basic.target.wants/*;\
+rm -f /lib/systemd/system/anaconda.target.wants/*;
+VOLUME [ "/sys/fs/cgroup" ]
+CMD ["/usr/sbin/init"]
+
+#add sshd
+RUN yum -y update
+RUN yum install -y passwd openssh-server openssh-clients initscripts
+
+#add jdk, gcc, git & opencv depends
+RUN yum install -y java-1.8.0-openjdk make git gcc-c++ gcc gtk2-devel gstreamer-devel net-tools
+
+#set root password
+RUN echo 'root:root' | chpasswd
+RUN /usr/sbin/sshd-keygen
+
+#enable sshd
+EXPOSE 22
+CMD /usr/sbin/sshd -D
